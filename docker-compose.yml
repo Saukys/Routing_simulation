@@ -1,77 +1,81 @@
 version: '3'
 
 services:
-  webserver1:
+  web1:
+    container_name: web1
     build:
       context: ./webservers
       dockerfile: Dockerfile
     environment:
       - SERVER_ID=1
     networks:
-      - backend
+      sim_net:
+        ipv4_address: 10.10.0.11  
 
-  webserver2:
+  web2:
+    container_name: web2
     build:
       context: ./webservers
       dockerfile: Dockerfile
     environment:
       - SERVER_ID=2
     networks:
-      - backend
+      sim_net:
+        ipv4_address: 10.10.0.12
 
-  webserver3:
+  web3:
+    container_name: web3
     build:
       context: ./webservers
       dockerfile: Dockerfile
     environment:
       - SERVER_ID=3
     networks:
-      - backend
+      sim_net:
+        ipv4_address: 10.10.0.13
 
-  nginx1:
+
+  router1:
     build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    expose:
-      - "80"
-    volumes:
-      - ./nginx/nginx1.conf:/etc/nginx/nginx.conf:ro
+      context: ./router
+    container_name: router1
     networks:
-      - frontend
-      - backend
-    depends_on:
-      - webserver1
-      - webserver2
-      - webserver3
+      sim_net:
+        ipv4_address: 10.10.0.100
+    volumes:
+      - ./router/haproxy.cfg:/etc/haproxy/haproxy.cfg
+      - ./router/keepalived1.conf:/etc/keepalived/keepalived.conf
+    cap_add:
+      - NET_ADMIN
+    command: sh -c "chmod 644 /etc/keepalived/keepalived.conf; haproxy -f /etc/haproxy/haproxy.cfg & keepalived -nld"
 
-  nginx2:
+  router2:
     build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    expose:
-      - "80"
-    volumes:
-      - ./nginx/nginx2.conf:/etc/nginx/nginx.conf:ro
+      context: ./router
+    container_name: router2
     networks:
-      - frontend
-      - backend
-    depends_on:
-      - webserver1
-      - webserver2
-      - webserver3
+      sim_net:
+        ipv4_address: 10.10.0.101
+    volumes:
+      - ./router/haproxy.cfg:/etc/haproxy/haproxy.cfg
+      - ./router/keepalived2.conf:/etc/keepalived/keepalived.conf
+    cap_add:
+      - NET_ADMIN
+    command: sh -c "chmod 644 /etc/keepalived/keepalived.conf; haproxy -f /etc/haproxy/haproxy.cfg & keepalived -nld"
 
-  haproxy:
-    image: haproxy:latest
-    ports:
-      - "80:80"
-    volumes:
-      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+  testclient:
+    image: curlimages/curl
+    container_name: testclient
     networks:
-      - frontend
-    depends_on:
-      - nginx1
-      - nginx2
+      sim_net:
+        ipv4_address: 10.10.0.200
+    stdin_open: true
+    tty: true
+    command: sh -c "while true; do curl -s http://10.10.0.100:80; sleep 1; done"
 
 networks:
-  frontend:
-  backend: 
+  sim_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.0.0/24

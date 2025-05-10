@@ -1,12 +1,9 @@
-FROM python:3.9-slim
-
+FROM python:3.12.5
+Expose 80
+ENV FLASK_app=app.py
 WORKDIR /app
-
-COPY requirements.txt .
+COPY ./app.py .
+COPY ./requirements.txt .
 RUN pip install -r requirements.txt
-
-COPY app.py .
-
-EXPOSE 80
-
-CMD ["python", "app.py"] 
+RUN pip install gunicorn
+CMD gunicorn -w 4 -b :80 app:app
