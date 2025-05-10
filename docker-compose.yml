@@ -1,0 +1,77 @@
+version: '3'
+
+services:
+  webserver1:
+    build:
+      context: ./webservers
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_ID=1
+    networks:
+      - backend
+
+  webserver2:
+    build:
+      context: ./webservers
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_ID=2
+    networks:
+      - backend
+
+  webserver3:
+    build:
+      context: ./webservers
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_ID=3
+    networks:
+      - backend
+
+  nginx1:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    volumes:
+      - ./nginx/nginx1.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - webserver1
+      - webserver2
+      - webserver3
+
+  nginx2:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    volumes:
+      - ./nginx/nginx2.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - webserver1
+      - webserver2
+      - webserver3
+
+  haproxy:
+    image: haproxy:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - frontend
+    depends_on:
+      - nginx1
+      - nginx2
+
+networks:
+  frontend:
+  backend: 
