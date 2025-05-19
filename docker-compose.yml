@@ -71,8 +71,7 @@ services:
         ipv4_address: 10.10.0.200
     stdin_open: true
     tty: true
-    command: sh -c "while true; do curl -s http://10.10.0.100:80; sleep 1; done"
-
+    
 networks:
   sim_net:
     driver: bridge
